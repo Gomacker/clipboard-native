@@ -1,11 +1,11 @@
 {
   "name": "clipboard-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "index.js",
   "scripts": {
     "build": "napi build ./build",
-    "test": "node test.js"
+    "start": "node ."
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"
