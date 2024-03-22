@@ -1,6 +1,5 @@
 const test = require('./build')
 const {readFileSync, writeFileSync} = require("node:fs");
-const {beep} = require("@napi-rs/cli/scripts");
 
 
 let formats = test.getClipboardFormats()
@@ -12,14 +11,20 @@ formats.forEach(
             console.log(
                 `\n{ID: ${value.id}, Size: ${data.length}, Name: ${value.name ? value.name : "<None>"}}:\n`,
                 Array.from(data),
+                Array.from(data).splice(-8)
             )
             switch (value.id) {
                 case 1:  // CF_TEXT
                     console.log(test.ansi2utf8(data))
                     break
                 case 13: // CF_UNICODETEXT
-                    // 最好转换的方式，但是可能没有CF_TEXT可靠
                     console.log(data.toString('utf-16le'))
+                    break
+                case 15: // CF_HDROP
+                    // console.log(data.toString('utf-16le'))
+                    break
+                case 17: // CF_DIBV5
+                    // console.log(data.toString('utf-16le'))
                     break
             }
             let path
@@ -37,6 +42,9 @@ formats.forEach(
                     break
                 case 'UniformResourceLocator':
                     console.log('UniformResourceLocator:', data.toString('utf-8'))
+                    break
+                case 'QQ_Unicode_RichEdit_Format':
+                    console.log('QQ_Unicode_RichEdit_Format:', data.toString('utf-8'))
                     break
             }
         }catch (e) {
