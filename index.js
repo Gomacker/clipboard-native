@@ -1,5 +1,7 @@
 const test = require('./build')
 const {readFileSync, writeFileSync} = require("node:fs");
+const os = require("os");
+const {onClipboardUpdate} = require("./build");
 
 
 let formats = test.getClipboardFormats()
@@ -52,4 +54,17 @@ formats.forEach(
         }
     }
 )
+
+onClipboardUpdate(() => {
+    console.log('Clipboard updated jssssssssssssssssssssssssss')
+})
+
+process.stdin.on('data', data => {
+    if (data.toString() === '\r\n' || data.toString() === '\n') {
+        console.log('exit...')
+        process.exit(0)
+    }
+    console.log('data:', data.toString().trim())
+})
+
 // console.log(test.getClipboardFormats())

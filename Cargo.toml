@@ -9,13 +9,14 @@ crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-napi = "2.15.2"
-napi-derive = "2.15.3"
+napi = { version = "2.16.0", features = ["napi4"] }
+napi-derive = "2.16.0"
 encoding = "0.2.33"
+lazy_static = "1.4.0"
 
 [dependencies.windows]
-version = "0.53.0"
-features = ["Win32_System_DataExchange", "Win32_Foundation", "Win32_System_Memory"]
+version = "0.54.0"
+features = ["Win32_System_DataExchange", "Win32_Foundation", "Win32_System_Memory", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"]
 
 [build-dependencies]
 napi-build = "2.1.2"
