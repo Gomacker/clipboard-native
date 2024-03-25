@@ -7,6 +7,15 @@
     "build": "napi build ./build",
     "start": "node ."
   },
+  "author": {
+    "url": "https://github.com/gomacker",
+    "name": "gomacker",
+    "email": "gomacker@outlook.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gomacker/clipboard-native.git"
+  },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"
   },
