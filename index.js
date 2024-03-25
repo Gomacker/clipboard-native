@@ -1,61 +1,102 @@
 const test = require('./build')
 const {readFileSync, writeFileSync} = require("node:fs");
 const os = require("os");
-const {onClipboardUpdate} = require("./build");
+const {onClipboardUpdate, ansi2utf8} = require("./build");
 
 
-let formats = test.getClipboardFormats()
-console.log(formats)
-formats.forEach(
-    value => {
-        try {
-            let data = test.getClipboardData(value.id)
-            console.log(
-                `\n{ID: ${value.id}, Size: ${data.length}, Name: ${value.name ? value.name : "<None>"}}:\n`,
-                Array.from(data),
-                Array.from(data).splice(-8)
-            )
-            switch (value.id) {
-                case 1:  // CF_TEXT
-                    console.log(test.ansi2utf8(data))
-                    break
-                case 13: // CF_UNICODETEXT
-                    console.log(data.toString('utf-16le'))
-                    break
-                case 15: // CF_HDROP
-                    // console.log(data.toString('utf-16le'))
-                    break
-                case 17: // CF_DIBV5
-                    // console.log(data.toString('utf-16le'))
-                    break
+function logClipboard() {
+    let formats = test.getClipboardFormats()
+    console.log(formats, '\n')
+    formats
+        .filter(value => [
+            'FileName',
+            'FileNameW',
+            'FileGroupDescriptor',
+            'FileGroupDescriptorW',
+        ].includes(value.name))
+        .forEach(
+            value => {
+                try {
+                    let data = test.getClipboardData(value.id)
+                    console.log(`{ID: ${value.id}, Size: ${data.length}, Name: ${value.name ? value.name : "<None>"}}:`)
+                    console.log(Array.from(data))
+                    // console.log(Array.from(data).splice(-8))
+
+                    let content = ''
+                    switch (value.id) {
+                        case 1:  // CF_TEXT
+                            content = `\x1b[2;3;32m${ansi2utf8(data)}\x1b[0m`
+                            // console.log(test.ansi2utf8(data))
+                            break
+                        case 7: // CF_OEMTEXT
+                            content = `\x1b[2;3;32m${ansi2utf8(data)}\x1b[0m`
+                            // console.log(data.toString('utf-8'))
+                            break
+                        case 13: // CF_UNICODETEXT
+                            content = `\x1b[2;3;32m${data.toString('utf-16le')}\x1b[0m`
+                            // console.log(data.toString('utf-16le'))
+                            break
+                        case 15: // CF_HDROP
+                            // content = `\x1b[2;3;32m${data.toString('utf-8').split('\0').join('\n')}\x1b[0m`
+                            content = `\x1b[2;3;32m${data.toString('utf-16le')}\x1b[0m`
+                            // console.log(data.toString('utf-16le'))
+                            break
+                        case 17: // CF_DIBV5
+                            // console.log(data.toString('utf-16le'))
+                            break
+                    }
+                    // let path
+                    switch (value.name) {
+                        case 'HTML Format':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'FileName':
+                            content = `\x1b[2;3;32m${data.toString('utf-8').split('\0').join('\n')}\x1b[0m`
+                            break
+                        case 'FileNameW':
+                            content = `\x1b[2;3;32m${data.toString('utf-16le').split('\0').join('\n')}\x1b[0m`
+                            break
+                        case 'UniformResourceLocator':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'QQ_Unicode_RichEdit_Format':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'FileGroupDescriptorW':
+                            content = `\x1b[2;3;32m${data.toString('utf-16le').split('\0').join('\n')}\x1b[0m`
+                            break
+                        case 'FileGroupDescriptor':
+                            content = `\x1b[2;3;32m${data.toString('utf-8').split('\0').join('\n')}\x1b[0m`
+                            break
+                        case 'x-special/gnome-copied-files':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'QQCapture_CLIPBOARDFORMAT':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'Rich Text Format':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'JAVA_DATAFLAVOR:application/x-java-jvm-local-objectref; class=com.intellij.codeInsight.editorActions.FoldingData':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                        case 'JAVA_DATAFLAVOR:application/x-java-serialized-object; class=com.intellij.openapi.editor.impl.EditorCopyPasteHelperImpl$CopyPasteOptionsTransferableData':
+                            content = `\x1b[2;3;32m${data.toString('utf-8')}\x1b[0m`
+                            break
+                    }
+                    if (content) console.log(content)
+                    else console.log(`\x1b[1;31m[undefined format decoder or binary format]\x1b[0m`)
+                    console.log('\n')
+                } catch (e) {
+                    console.log(`Exception on ${e}`)
+                }
             }
-            let path
-            switch (value.name) {
-                case 'HTML Format':
-                    console.log(`HTML Format:\n${data.toString('utf-8')}`)
-                    break
-                case 'FileName':
-                    path = data.toString('utf-8').split('\0')[0]
-                    console.log('FileName:', path)
-                    break
-                case 'FileNameW':
-                    path = data.toString('utf-16le').split('\0')[0]
-                    console.log('FileNameW:', path)
-                    break
-                case 'UniformResourceLocator':
-                    console.log('UniformResourceLocator:', data.toString('utf-8'))
-                    break
-                case 'QQ_Unicode_RichEdit_Format':
-                    console.log('QQ_Unicode_RichEdit_Format:', data.toString('utf-8'))
-                    break
-            }
-        }catch (e) {
-            console.log(`Exception on ${e}`)
-        }
-    }
-)
+        )
+}
 
+logClipboard()
 onClipboardUpdate(() => {
+    logClipboard()
     console.log('Clipboard updated jssssssssssssssssssssssssss')
 })
 

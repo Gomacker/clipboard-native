@@ -1,29 +1,20 @@
+use std::cmp::min;
 use std::slice::from_raw_parts;
 use std::thread;
 
 use encoding::{DecoderTrap, Encoding};
 use encoding::all::GB18030;
-use napi::{JsFunction, NapiRaw};
 use napi::bindgen_prelude::{Buffer, Result};
+use napi::JsFunction;
 use napi::threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi_derive::napi;
 use windows::Win32::Foundation::{HANDLE, HGLOBAL, HWND};
-use windows::Win32::System::DataExchange::{
-    CloseClipboard,
-    EnumClipboardFormats,
-    GetClipboardData,
-    GetClipboardFormatNameA,
-    OpenClipboard,
-};
+use windows::Win32::System::DataExchange::{CloseClipboard, EnumClipboardFormats, GetClipboardData, GetClipboardFormatNameA, GetClipboardOwner, IsClipboardFormatAvailable, OpenClipboard};
 use windows::Win32::System::Memory::{GlobalLock, GlobalSize, GlobalUnlock};
 
 use viewer::ClipboardViewer;
 
 mod viewer;
-
-// lazy_static! {
-//     static ref CLIPBOARD_VIEWER: Arc<Mutex<Option<ClipboardViewer>>> = Arc::new(Mutex::new(None));
-// }
 
 static mut CLIPBOARD_VIEWER: Option<ClipboardViewer> = None;
 
@@ -49,12 +40,22 @@ fn get_clipboard_data(format: u32) -> Buffer {
     let mut data: &[u8] = &[];
     unsafe {
         let h_wnd: HWND = Default::default();
-        if OpenClipboard(h_wnd).is_ok() {
+
+        // TODO Error: exit with 0xC0000374 when GetClipboardData(format=2)
+        if format == 2 {
+            println!("\x1b[31mSkip format 2\x1b[0m");
+            return Buffer::from(data);
+        }
+
+
+        if IsClipboardFormatAvailable(format).is_ok() && OpenClipboard(h_wnd).is_ok() {
             if let Ok(handle) = GetClipboardData(format) {
                 let size = GlobalSize(HGLOBAL(handle.0 as *mut _));
-                data = get_global(handle, size);
+                if size != 0 {
+                    data = get_global(handle, size);
+                }
             }
-            CloseClipboard().unwrap();
+            CloseClipboard().expect("Failed to close clipboard");
         }
     }
     return Buffer::from(data);
@@ -94,15 +95,6 @@ fn get_clipboard_formats() -> Vec<ClipboardFormat> {
     return vec;
 }
 
-#[napi]
-fn quit() {
-    unsafe {
-        if let Some(viewer) = CLIPBOARD_VIEWER.as_ref() {
-            viewer.stop();
-        }
-    }
-}
-
 static mut ON_CLIPBOARD_UPDATED_CALLBACKS: Vec<Box<dyn Fn() -> Result<()>>> = Vec::new();
 
 #[napi(ts_args_type = "callback: () => void")]
@@ -123,33 +115,11 @@ unsafe fn init_listener() {
     thread::spawn(move || {
         if CLIPBOARD_VIEWER.is_none() {
             CLIPBOARD_VIEWER = Some(ClipboardViewer::new(move || {
-                // println!("the clipboard is changed!! length: {}", ON_CLIPBOARD_UPDATED_CALLBACKS.len());
                 for f in ON_CLIPBOARD_UPDATED_CALLBACKS.iter() {
-
                     f().expect("Failed to call callback function");
                 }
             }));
             CLIPBOARD_VIEWER.as_ref().unwrap().listen();
         }
-        // if let Ok(mut clipboard_viewer) = CLIPBOARD_VIEWER.lock() {
-        //     if clipboard_viewer.is_none() {
-        //         *clipboard_viewer = Some(ClipboardViewer::new(|| {
-        //             println!("the clipboard is changed!!");
-        //             let _ = callback();
-        //         }));
-        //         clipboard_viewer.as_ref().unwrap().listen();
-        //     }
-        // } else {
-        //     println!("Failed to acquire lock on CLIPBOARD_VIEWER");
-        // }
     });
-
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        // println!("{:?}", get_clipboard_formats());
-    }
 }
