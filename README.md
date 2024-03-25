@@ -1,5 +1,7 @@
 # Clipboard-native
 
+**tip: only works on windows**
+
 a node addon that allows you to interact with the clipboard using the windows api
 
 written in rust using napi-rs
